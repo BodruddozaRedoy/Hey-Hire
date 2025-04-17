@@ -1,16 +1,18 @@
 "use client"
 import { supabase } from '@/services/supabaseClient'
-import React, { useEffect } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
+import { UserContext } from '@/context/UserContext';
 
-export default function Provider({children}:any) {
+export default function Provider({ children }: any) {
+    const [user, setUser] = useState<any>(null)
     useEffect(() => {
         const CreateNewUser = () => {
-            supabase.auth.getUser().then(async({data:{user}}) => {
-                const {data:Users, error} = await supabase.from("Users").select("*").eq("email", user?.email)
+            supabase.auth.getUser().then(async ({ data: { user } }) => {
+                const { data: Users, error } = await supabase.from("Users").select("*").eq("email", user?.email)
 
                 console.log(Users)
-                if(Users?.length === 0){
-                    const {data, error} = await supabase.from("Users").insert([
+                if (Users?.length === 0) {
+                    const { data, error } = await supabase.from("Users").insert([
                         {
                             name: user?.user_metadata?.name,
                             email: user?.email,
@@ -18,12 +20,23 @@ export default function Provider({children}:any) {
                         }
                     ])
                     console.log(data)
+                    setUser(data)
+                    return;
                 }
+                setUser(Users[0])
             })
         }
-    CreateNewUser()
-    },[])
-  return (
-    <div>{children}</div>
-  )
+        CreateNewUser()
+    }, [])
+    return (
+        <UserContext.Provider value={{ user, setUser }}>
+            <div>{children}</div>
+        </UserContext.Provider>
+    )
+}
+
+
+export const useUser = () => {
+    const context = useContext(UserContext)
+    return context
 }
